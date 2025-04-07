@@ -1,0 +1,185 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  REGISTRY: ghcr.io
+
+permissions:
+  actions: read
+  contents: write
+  packages: write
+
+jobs:
+  lint-test-build-affected:
+    name: Lint, Test & Build
+    runs-on: ubuntu-latest
+    outputs:
+      backend_affected_paths: ${{ steps.get-backend-affected.outputs.backend_affected_paths }}
+      frontend_affected_paths: ${{ steps.get-frontend-affected.outputs.frontend_affected_paths }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup
+        uses: ./.github/actions/setup
+        with:
+          go_version: 1.24.x
+          node_version: 22.x
+
+      - name: Lint, test and build
+        run: |
+          pnpm nx affected --target=lint --parallel=3
+          pnpm nx run-many --all --target=test --parallel=3
+          pnpm nx affected --target=build --parallel=3
+
+      - name: Get Backend Affected
+        id: get-backend-affected
+        run: |
+          BACKEND_AFFECTED_APPS=$(pnpm nx show projects --affected --projects=tag:backend)
+          BACKEND_AFFECTED_APPS_JSON=$(printf "%s" "$BACKEND_AFFECTED_APPS" | jq -R . | jq -s -c .)
+          echo $BACKEND_AFFECTED_APPS_JSON
+          echo "backend_affected_paths=$BACKEND_AFFECTED_APPS_JSON" >> "$GITHUB_OUTPUT"
+
+      - name: Get Frontend Affected
+        id: get-frontend-affected
+        run: |
+          FRONTEND_AFFECTED_APPS=$(pnpm nx show projects --affected --projects=tag:library)
+          FRONTEND_AFFECTED_APPS_JSON=$(printf "%s" "$FRONTEND_AFFECTED_APPS" | jq -R . | jq -s -c .)
+          echo $FRONTEND_AFFECTED_APPS_JSON
+          echo "frontend_affected_paths=$FRONTEND_AFFECTED_APPS_JSON" >> "$GITHUB_OUTPUT"
+
+  e2e-affected:
+    name: Run E2E tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup
+        uses: ./.github/actions/setup
+        with:
+          node_version: 22.x
+
+      - name: Install playwright
+        run: pnpm playwright install --with-deps
+
+      - name: E2E
+        run: pnpm nx affected -t e2e
+
+  publish-docker:
+    name: Publish Docker Images
+    if: ${{ always() && (needs.lint-test-build-affected.outputs.backend_affected_paths != '[]') }}
+    needs: [lint-test-build-affected, e2e-affected]
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix:
+        backend_affected_paths: ${{ fromJson(needs.lint-test-build-affected.outputs.backend_affected_paths) }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Setup
+        uses: ./.github/actions/setup
+        with:
+          node_version: 22.x
+
+      - name: Set Git Identity
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Show affected
+        run: echo ${{ matrix.backend_affected_paths }}
+
+      - name: Set image name
+        run: |
+          IMAGE_NAME_JSON=$(echo ${{ matrix.backend_affected_paths }} | tr / _ )
+          echo "IMAGE_NAME=$IMAGE_NAME_JSON" >> "$GITHUB_ENV"
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.IMAGE_NAME }}
+          flavor: latest=true
+          tags: |
+            type=sha
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./${{ matrix.backend_affected_paths }}/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Run NX release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for i in 1 2 3; do
+            git pull --rebase origin main && pnpm nx release --skip-publish --group=backend && break || sleep 5
+          done
+
+  publish-npm:
+    name: Publish NPM Packages
+    if: ${{ always() && (needs.lint-test-build-affected.outputs.frontend_affected_paths != '[]') }}
+    needs: [lint-test-build-affected, e2e-affected]
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix:
+        frontend_affected_paths: ${{ fromJson(needs.lint-test-build-affected.outputs.frontend_affected_paths) }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Setup
+        uses: ./.github/actions/setup
+        with:
+          node_version: 22.x
+
+      - name: Set Git Identity
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Authenticate to GitHub Packages
+        run: echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > ~/.npmrc
+
+      - name: Build the library
+        run: pnpm nx build ${{ matrix.frontend_affected_paths }}
+
+      - name: Run NX release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for i in 1 2 3; do
+            git pull --rebase origin main && pnpm nx release --skip-publish --group=frontend && break || sleep 10
+          done
+          pnpm nx release publish --group=frontend

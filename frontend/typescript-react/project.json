@@ -1,0 +1,9 @@
+{
+  "name": "typescript-react",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "frontend/typescript-react/src",
+  "projectType": "application",
+  "tags": ["frontend", "typescript"],
+  "// targets": "to see all targets run: nx show project typescript-react --web",
+  "targets": {}
+}

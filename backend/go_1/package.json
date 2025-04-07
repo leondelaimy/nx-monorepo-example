@@ -1,0 +1,8 @@
+{
+  "name": "@leondelaimy/backend_go_1",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./main.go",
+  "types": "",
+  "dependencies": {}
+}

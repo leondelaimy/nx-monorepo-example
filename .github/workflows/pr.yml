@@ -1,0 +1,33 @@
+name: pr
+
+on:
+  pull_request:
+
+env:
+  REGISTRY: ghcr.io
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  lint-test-build-affected:
+    name: Lint, Test & Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup
+        uses: ./.github/actions/setup
+        with:
+          go_version: 1.24.x
+          node_version: 22.x
+
+      - name: Lint, test and build
+        run: |
+          pnpm nx affected --target=lint --parallel=3
+          pnpm nx run-many --all --target=test --parallel=3
+          pnpm nx affected --target=build --parallel=3

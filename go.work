@@ -1,0 +1,7 @@
+go 1.24
+
+use (
+	./backend/go_1
+	./backend/go_2
+	./shared/go_lib_1
+)
