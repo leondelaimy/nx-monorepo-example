@@ -32,5 +32,3 @@ func main() {
 
 	log.Fatal(http.ListenAndServe(":3000", nil))
 }
-
-// test ci
