@@ -1,62 +1,174 @@
-# NxMonorepoPoc
+[![ci](https://github.com/leondelaimy/nx-monorepo-example/actions/workflows/ci.yml/badge.svg)](https://github.com/leondelaimy/nx-monorepo-example/actions/workflows/ci.yml)
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+# Nx Monorepo Example
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is ready ✨.
+## Requirements
 
-Run `npx nx graph` to visually explore what got created. Now, let's get you up to speed!
+- Node
+- pnpm
+- Go
+- Nx
+- Docker
+
+## Contents
+- [Install dependencies](#install-dependencies)
+- [Run tasks](#run-tasks)
+- [Custom run commands](#custom-run-commands)
+- [Add new projects](#add-new-projects)
+- [CI/CD pipelines](#ci--cd-pipelines)
+- [Conventional commits](#conventional-commits)
+- [Troubleshooting](#troubleshooting)
+
+## Install dependencies
+
+To install node packages, run:
+```sh
+pnpm i
+```
 
 ## Run tasks
 
 To run tasks with Nx use:
 
 ```sh
-npx nx <target> <project-name>
+nx <target> <project-name>
 ```
 
-For example:
+Targets include `serve`, `lint`, `test` and `build` (depending on the project - see their `project.json`)
+
+Currently services / packages include
+
+### Backend
+- `go_1`
+- `go_2`
+
+### Frontend
+- `typescript-react`
+
+### Shared libraries
+- `go_lib_1`
+- `typescript_lib`
+
+For example you can run them individually:
 
 ```sh
-npx nx build myproject
+nx serve go_1
+nx serve typescript-react
+
+nx lint go_1
+nx lint typescript-react
+
+nx test go_1
+nx test typescript-react
+
+nx build go_1
+nx build typescript-react
 ```
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+Or run them all
 
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+```sh
+nx run-many -t lint test build
+```
+
+Or run only those that have been changed
+
+```sh
+nx affected -t lint test build
+```
+
+## Custom run commands
+
+You can also define custom run commands (depending on the project - see their `project.json`)
+
+For example, to build Docker containers:
+
+```json
+...
+"container": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker build -t ghcr.io/field/spring-os-tracking -f services/tracking/Dockerfile ."
+      }
+    }
+...
+```
+
+And to execute run:
+
+```sh
+nx container go_1
+```
 
 ## Add new projects
 
-While you could add new projects to your workspace manually, you might want to leverage [Nx plugins](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) and their [code generation](https://nx.dev/features/generate-code?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) feature.
+There is an ecosystem of plugins that can be used to make code generation easier for initial setup
 
-To install a new plugin you can use the `nx add` command. Here's an example of adding the React plugin:
+> [!NOTE]
+> These are usually community built and could be opinionated. Try them and see if generated code fits our use case. The least required set up can be achieved by adding a `project.json` and `package.json`
+
 ```sh
-npx nx add @nx/react
+npx nx add @nx/go
 ```
 
-Use the plugin's generator to create new projects. For example, to create a new React app or library:
+Use the plugin's generator to create new projects. For example, to create a Go project:
 
 ```sh
 # Generate an app
-npx nx g @nx/react:app demo
+npx nx g @nx-go/nx-go:application services/go-new-service
 
 # Generate a library
-npx nx g @nx/react:lib some-lib
+npx nx g @nx-go/nx-go:library services/go-new-library
 ```
 
-You can use `npx nx list` to get a list of installed plugins. Then, run `npx nx list <plugin-name>` to learn about more specific capabilities of a particular plugin. Alternatively, [install Nx Console](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) to browse plugins and generators in your IDE.
+## CI / CD Pipelines
 
-[Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+Workflows found in `.github`
 
-## Useful links
+- `ci.yml`
+- `pr.yml`
+- reusable setup `action.yml`
 
-Learn more:
+## Conventional Commits
 
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+To trigger a release, squash a PR with the following commit format:
 
-And join the Nx community:
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+```
+<version_type>(<project_name>): commit message
+```
+
+- `fix` prefix correlates to `PATCH`
+- `feat` prefix correlates to `MINOR`
+- `fix!` or `feat!` correlates to `MAJOR`
+- `chore` or `docs` are also allowed and will not trigger CI
+
+For example a release will trigger with the following commit message:
+
+```
+fix(backend/go_1): patch release
+feat(frontend/typescript_react): minor release
+fix!(backend/go_2): major release
+```
+
+But not for the following:
+```
+docs: update README
+chore: tidy up
+ci: test ci
+```
+
+For further information see https://www.conventionalcommits.org/en/v1.0.0/
+
+## Troubleshooting
+
+Sometimes the node environment can get out of sync, to clean up run:
+```sh
+pnpm clean
+# reinstall dependencies
+pnpm i
+```
+
+Sometimes the nx dependency graph can get out of sync, to reset run:
+```sh
+nx reset
+```
