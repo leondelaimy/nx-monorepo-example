@@ -1,0 +1,8 @@
+{
+  "name": "frontend-typescript-react",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./index.html",
+  "types": "",
+  "dependencies": {}
+}
