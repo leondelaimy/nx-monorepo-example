@@ -1,0 +1,16 @@
+{
+  "name": "tests/e2e",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "tests/e2e/",
+  "tags": [],
+  "implicitDependencies": [],
+  "targets": {
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx playwright test tests/e2e/src/example.spec.ts --config=tests/e2e/playwright.config.ts"
+      }
+    }
+  }
+}
