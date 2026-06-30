@@ -76,7 +76,7 @@
   "release": {
     "groups": {
       "frontend": {
-        "projects": ["shared/typescript_lib"]
+        "projects": ["frontend/typescript-react"]
       },
       "backend": {
         "projects": ["backend/go_1", "backend/go_2"]

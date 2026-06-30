@@ -38,11 +38,11 @@ jobs:
         run: |
           pnpm nx affected --target=lint --parallel=3
           pnpm nx affected --target=biome-lint --parallel=3
-          pnpm nx run-many --all --target=test --parallel=3 --exclude=backend/gen-ai
+          pnpm nx run-many --all --target=test --parallel=3 --exclude=e2e
           pnpm nx affected --target=build --parallel=3
 
-  smoke-tests:
-    name: Run Smoke Tests
+  e2e-tests:
+    name: Run E2E Tests
     if: >
       github.event_name == 'workflow_dispatch' ||
       startsWith(github.event.head_commit.message, 'fix') ||
@@ -82,7 +82,7 @@ jobs:
       # - name: Start Docker Compose
       #   run: pnpm nx up-ci e2e -d
 
-      - name: Run Smoke Tests
+      - name: Run E2E Tests
         run: pnpm nx test e2e --reporter=list        
 
   version-and-tag:
@@ -91,7 +91,7 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       startsWith(github.event.head_commit.message, 'fix') ||
       startsWith(github.event.head_commit.message, 'feat')
-    needs: [lint-test-build-affected, smoke-tests]
+    needs: [lint-test-build-affected, e2e-tests]
     runs-on: ubuntu-latest 
     concurrency:
       group: release-${{ github.ref_name }}

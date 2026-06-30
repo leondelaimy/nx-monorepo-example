@@ -2,6 +2,7 @@
   "name": "@nx-monorepo-example/source",
   "version": "0.0.0",
   "license": "MIT",
+  "packageManager": "pnpm@10.33.2",
   "scripts": {
     "prepare": "husky",
     "dev": "pnpm nx run-many --target=serve --all --maxParallel=10",

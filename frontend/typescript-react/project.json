@@ -5,5 +5,27 @@
   "projectType": "application",
   "tags": ["frontend", "typescript"],
   "// targets": "to see all targets run: nx show project typescript-react --web",
-  "targets": {}
+  "targets": {
+    "build": {
+			"executor": "@nx/vite:build",
+			"dependsOn": ["typecheck"],
+			"options": {
+				"outputPath": "dist/{projectRoot}",
+				"configFile": "{projectRoot}/vite.config.ts",
+				"mode": "production"
+			}
+		},
+		"typecheck": {
+			"executor": "nx:run-commands",
+			"options": {
+				"command": "tsc -p {projectRoot}/tsconfig.json"
+			}
+		},
+		"container": {
+			"executor": "nx:run-commands",
+			"options": {
+				"command": "docker build -t ghcr.io/leondelaimy/typescript-react:latest -f frontend/typescript-react/Dockerfile ."
+			}
+		}
+  }
 }
