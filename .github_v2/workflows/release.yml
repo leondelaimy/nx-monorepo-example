@@ -1,0 +1,96 @@
+name: release
+on:
+  push:
+    tags:
+      - '**@*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+  actions: write
+
+env:
+  REGISTRY: ghcr.io
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish-docker:
+    name: Publish Docker Images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Setup
+        uses: ./.github/actions/setup
+        with:
+          node_version: 22.x
+
+      - name: Set Git Identity
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Set tag info
+        id: tag
+        run: |
+          GIT_TAG=${{ github.ref_name }}
+          FOLDER_PATH=${GIT_TAG%%@*}
+          IMAGE_NAME=$(echo $FOLDER_PATH | tr / - )
+          VERSION=${GIT_TAG##*@}
+          echo "GIT_TAG=$GIT_TAG" >> "$GITHUB_ENV"
+          echo "FOLDER_PATH=$FOLDER_PATH" >> "$GITHUB_ENV"
+          echo "IMAGE_NAME=$IMAGE_NAME" >> "$GITHUB_ENV"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Free disk space
+        run: |
+          df -h
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache
+          docker system prune -af || true
+          df -h
+
+      # Needed for multi-arch builds on ubuntu-latest
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      # Needed for buildx multi-platform
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images:  ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.IMAGE_NAME }}
+          flavor: latest=true
+          tags: |
+            type=sha
+            type=raw,value=v${{ env.VERSION }}
+
+      - name: Build and push (multi-arch)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./${{ env.FOLDER_PATH }}/Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
