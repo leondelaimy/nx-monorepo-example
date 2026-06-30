@@ -5,26 +5,35 @@
   "sourceRoot": "backend/go_2",
   "tags": ["backend", "go"],
   "targets": {
-    "build": {
-      "executor": "@nx-go/nx-go:build",
+     "build": {
+     "executor": "nx:run-commands",
       "options": {
-        "main": "{projectRoot}/main.go"
+        "command": "go build -o dist/{projectRoot} {projectRoot}"
       }
     },
     "serve": {
-      "executor": "@nx-go/nx-go:serve",
+      "executor": "nx:run-commands",
       "options": {
-        "main": "{projectRoot}/main.go"
+        "command": "go run {projectRoot}"
       }
     },
     "test": {
-      "executor": "@nx-go/nx-go:test"
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "go test {projectRoot}/..."
+      }
     },
     "lint": {
-      "executor": "@nx-go/nx-go:lint"
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "go fmt {projectRoot}/main.go"
+      }
     },
     "tidy": {
-      "executor": "@nx-go/nx-go:tidy"
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "cd {projectRoot} && go mod tidy"
+      }
     },
     "container": {
       "executor": "nx:run-commands",

@@ -13,7 +13,6 @@
     "sharedGlobals": ["{workspaceRoot}/go.work"]
   },
   "plugins": [
-    "@nx-go/nx-go",
     {
       "plugin": "@nx/react/router-plugin",
       "options": {

@@ -5,14 +5,35 @@
   "sourceRoot": "shared/go_lib_1",
   "tags": [],
   "targets": {
+    "build": {
+     "executor": "nx:run-commands",
+      "options": {
+        "command": "go build -o dist/{projectRoot} {projectRoot}"
+      }
+    },
+    "serve": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "go run {projectRoot}"
+      }
+    },
     "test": {
-      "executor": "@nx-go/nx-go:test"
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "go test {projectRoot}/..."
+      }
     },
     "lint": {
-      "executor": "@nx-go/nx-go:lint"
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "go fmt {projectRoot}/go_lib_1.go"
+      }
     },
     "tidy": {
-      "executor": "@nx-go/nx-go:tidy"
-    }
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "cd {projectRoot} && go mod tidy"
+      }
+    },
   }
 }

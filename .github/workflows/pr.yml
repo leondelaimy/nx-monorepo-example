@@ -29,5 +29,67 @@ jobs:
       - name: Lint, test and build
         run: |
           pnpm nx affected --target=lint --parallel=3
-          pnpm nx run-many --all --target=test --parallel=3
+          pnpm nx affected --target=biome-lint --parallel=3
+          pnpm nx run-many --all --target=test --parallel=3 --exclude=e2e
           pnpm nx affected --target=build --parallel=3
+
+  containers:
+    name: Run Docker Containers
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup
+        uses: ./.github/actions/setup
+        with:
+          go_version: 1.24.x
+          node_version: 22.x
+
+      - name: Free disk space
+        run: |
+          df -h
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache
+          docker system prune -af || true
+          df -h    
+
+      - name: Set up Docker
+        uses: docker/setup-docker-action@v4
+
+      - name: Build Docker Containers
+        run: pnpm nx affected --target=container --parallel=3
+
+  e2e-tests:
+    name: Run E2E Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup
+        uses: ./.github/actions/setup
+        with:
+          go_version: 1.24.x
+          node_version: 22.x
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+
+      # - name: Set up Docker
+      #   uses: docker/setup-docker-action@v4
+
+      # - name: Set up Docker Compose
+      #   uses: docker/setup-compose-action@v1
+
+      # - name: Start Docker Compose
+      #   run: pnpm nx up-ci e2e -d
+
+      - name: Run E2E Tests
+        run: pnpm nx test e2e --reporter=list
