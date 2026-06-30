@@ -100,6 +100,12 @@
       }
     }
   },
+  "tui": {
+    "enabled": true,
+    "autoExit": true
+  },
   "analytics": false,
-  "nxCloudId": "6a441634f55594193835ed32"
+  "migrate": {
+    "agentic": false
+  }
 }
