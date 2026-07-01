@@ -1,5 +1,5 @@
 {
-  "name": "typescript_lib",
+  "name": "shared/typescript_lib",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "shared/typescript_lib/src",
   "projectType": "library",

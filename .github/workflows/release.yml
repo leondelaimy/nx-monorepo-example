@@ -19,6 +19,7 @@ concurrency:
 
 jobs:
   publish-docker:
+    if: startsWith(github.ref_name, 'frontend/') || startsWith(github.ref_name, 'backend/')
     name: Publish Docker Images
     runs-on: ubuntu-latest
     steps:
@@ -94,3 +95,60 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          
+
+  publish-npm:
+    if: startsWith(github.ref_name, 'shared/')
+    name: Publish NPM Packages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Setup
+        uses: ./.github/actions/setup
+        with:
+          node_version: 22.x
+
+      - name: Set Git Identity
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Set tag info
+        id: tag
+        run: |
+          GIT_TAG=${{ github.ref_name }}
+          FOLDER_PATH=${GIT_TAG%%@*}
+          IMAGE_NAME=$(echo $FOLDER_PATH | tr / _ )
+          VERSION=${GIT_TAG##*@}
+          echo "GIT_TAG=$GIT_TAG" >> "$GITHUB_ENV"
+          echo "FOLDER_PATH=$FOLDER_PATH" >> "$GITHUB_ENV"
+          echo "IMAGE_NAME=$IMAGE_NAME" >> "$GITHUB_ENV"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Free disk space
+        run: |
+          df -h
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache
+          docker system prune -af || true
+          df -h    
+
+      - name: Authenticate to GitHub Packages
+        run: echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > ~/.npmrc
+
+      - name: Build the library
+        run: pnpm nx build ${{ env.FOLDER_PATH }}
+
+      - name: Run NX release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pnpm nx release --publish --groups=shared    

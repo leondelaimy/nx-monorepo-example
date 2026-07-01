@@ -1,6 +1,6 @@
 {
-  "name": "frontend-typescript-react",
-  "version": "0.0.1",
+  "name": "@leondelaimy/frontend_typescript_react",
+  "version": "0.0.0",
   "type": "module",
   "main": "./index.html",
   "types": "",

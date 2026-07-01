@@ -85,6 +85,9 @@
       },
       "backend": {
         "projects": ["backend/go_1", "backend/go_2"]
+      },
+      "shared": {
+        "projects": ["shared/typescript_lib"]
       }
     },
     "releaseTag": {
