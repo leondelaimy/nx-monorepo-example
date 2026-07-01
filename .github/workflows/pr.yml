@@ -91,5 +91,8 @@ jobs:
       # - name: Start Docker Compose
       #   run: pnpm nx up-ci e2e -d
 
+      - name: Build
+        run:  pnpm nx affected --target=build --parallel=3
+        
       - name: Run E2E Tests
         run: pnpm nx test e2e --reporter=list
