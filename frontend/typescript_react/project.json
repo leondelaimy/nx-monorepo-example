@@ -1,10 +1,10 @@
 {
-  "name": "typescript-react",
+  "name": "frontend/typescript_react",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "frontend/typescript-react/src",
   "projectType": "application",
   "tags": ["frontend", "typescript"],
-  "// targets": "to see all targets run: nx show project typescript-react --web",
+  "// targets": "to see all targets run: nx show project frontend/typescript_react --web",
   "targets": {
     "build": {
 			"executor": "@nx/vite:build",
@@ -24,7 +24,7 @@
 		"container": {
 			"executor": "nx:run-commands",
 			"options": {
-				"command": "docker build -t ghcr.io/leondelaimy/typescript-react:latest -f frontend/typescript-react/Dockerfile ."
+				"command": "docker build -t ghcr.io/leondelaimy/typescript_react:latest -f frontend/typescript_react/Dockerfile ."
 			}
 		}
   }

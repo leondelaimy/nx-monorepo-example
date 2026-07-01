@@ -43,7 +43,7 @@ jobs:
         run: |
           GIT_TAG=${{ github.ref_name }}
           FOLDER_PATH=${GIT_TAG%%@*}
-          IMAGE_NAME=$(echo $FOLDER_PATH | tr / - )
+          IMAGE_NAME=$(echo $FOLDER_PATH | tr / _ )
           VERSION=${GIT_TAG##*@}
           echo "GIT_TAG=$GIT_TAG" >> "$GITHUB_ENV"
           echo "FOLDER_PATH=$FOLDER_PATH" >> "$GITHUB_ENV"
