@@ -18,9 +18,12 @@ afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
 describe('App', () => {
-  it('should render successfully', () => {
-    const { baseElement } = render(<App />);
+  it('should render successfully', async () => {
+    const { baseElement, getByText } = render(<App />);
     expect(baseElement).toBeTruthy();
+    // Let the fetches in App's effect resolve (and be intercepted by MSW)
+    // before the test ends, so they don't leak past `server.close()`.
+    await waitFor(() => expect(getByText('"test1"')).toBeTruthy());
   });
 
   it('should have a greeting as the title', async () => {
@@ -28,5 +31,7 @@ describe('App', () => {
     expect(
       getAllByText(new RegExp('Welcome typescript-react', 'gi')).length > 0
     ).toBeTruthy();
+    // Same here: wait for the fetched data to settle before teardown.
+    await waitFor(() => expect(getAllByText('"test2"').length).toBeGreaterThan(0));
   });
 });
