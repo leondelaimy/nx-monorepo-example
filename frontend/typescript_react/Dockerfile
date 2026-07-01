@@ -16,11 +16,11 @@ RUN corepack enable \
 COPY nx.json tsconfig.base.json eslint.config.mjs ./
 
 # Copy only what we need to build this app
-COPY frontend/typescript-react ./frontend/typescript-react
+COPY frontend/typescript_react ./frontend/typescript_react
 COPY shared/typescript_lib ./shared/typescript_lib
 
 # Build the frontend app
-RUN pnpm exec nx build typescript-react --configuration=production
+RUN pnpm exec nx build frontend/typescript_react --configuration=production
 
 # ---- Runtime image ----
 FROM node:22-alpine AS runner
@@ -29,7 +29,7 @@ ENV NODE_ENV=production
 
 RUN npm install -g serve
 
-COPY --from=builder /app/dist/frontend/typescript-react ./dist
+COPY --from=builder /app/dist/frontend/typescript_react ./dist
 COPY --from=builder /app/package.json /app/pnpm-lock.yaml ./
 
 EXPOSE 3000

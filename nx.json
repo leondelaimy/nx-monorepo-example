@@ -81,7 +81,7 @@
   "release": {
     "groups": {
       "frontend": {
-        "projects": ["frontend/typescript-react"]
+        "projects": ["frontend/typescript_react"]
       },
       "backend": {
         "projects": ["backend/go_1", "backend/go_2"]
