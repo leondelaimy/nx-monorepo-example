@@ -151,4 +151,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          pnpm nx release --publish --groups=shared    
+          pnpm nx release publish --groups=shared    
